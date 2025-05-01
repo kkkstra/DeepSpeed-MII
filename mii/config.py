@@ -6,6 +6,7 @@ import os
 import string
 from typing import List, Optional, Union, Dict, Any, Literal
 
+from deepspeed.inference.v2.inference_utils import PrefixCacheStrategy
 from deepspeed.launcher.runner import DLTS_HOSTFILE, fetch_hostfile
 from deepspeed.inference import RaggedInferenceEngineConfig
 from deepspeed.runtime.config_utils import DeepSpeedConfigModel
@@ -177,6 +178,9 @@ class ModelConfig(DeepSpeedConfigModel):
     """
     Log performance information about model inference with very little overhead.
     """
+
+    prefix_cache_strategy: Optional[PrefixCacheStrategy] = PrefixCacheStrategy.RECOMP
+
     @property
     def provider(self) -> ModelProvider:
         return ModelProvider.HUGGING_FACE
@@ -218,6 +222,11 @@ class ModelConfig(DeepSpeedConfigModel):
     @model_validator(mode="after")
     def propagate_quantization_mode(self) -> "ModelConfig":
         self.inference_engine_config.quantization.quantization_mode = self.quantization_mode
+        return self
+
+    @model_validator(mode="after")
+    def propagate_prefix_cache_strategy(self) -> "ModelConfig":
+        self.inference_engine_config.state_manager.prefix_cache_strategy = self.prefix_cache_strategy
         return self
 
 

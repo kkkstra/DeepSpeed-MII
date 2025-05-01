@@ -116,6 +116,7 @@ class RaggedBatchBase:
         if scheduled_requests.requests_to_run:
             next_token_logits = self.put(
                 scheduled_requests.requests_to_run.uids,
+                scheduled_requests.requests_to_run.sids,
                 scheduled_requests.requests_to_run.tokens,
             )
 
@@ -422,6 +423,7 @@ class RaggedBatchBase:
                      uid: int,
                      input_tokens: torch.Tensor,
                      kwargs: Dict) -> Request:
+        sid = kwargs.get("sid", None)
         kwargs["prompt_length"] = len(input_tokens)
         kwargs["max_length"] = kwargs.get("max_length", self.max_length)
         generate_params = GenerateParamsConfig(**kwargs)
@@ -479,6 +481,7 @@ class RaggedBatchBase:
         return Request(
             tid=tid,
             uid=uid,
+            sid=sid,
             input_tokens=input_tokens,
             prompt_tokens=input_tokens,
             seq_length=0,
@@ -497,9 +500,9 @@ class RaggedBatchBase:
                         generated_length=generated_length,
                         finish_reason=finish_reason)
 
-    def put(self, uids: List[int], tokenized_input: List[torch.Tensor]) -> torch.Tensor:
+    def put(self, sids: List[str], uids: List[int], tokenized_input: List[torch.Tensor]) -> torch.Tensor:
         # Call inference engine. You can skip checking schedulability because we already checked when scheduling
-        return self.inference_engine.put(uids, tokenized_input, do_checks=False)
+        return self.inference_engine.put(sids, uids, tokenized_input, do_checks=False)
 
     def flush(self, uids: List[int]) -> None:
         for uid in uids:

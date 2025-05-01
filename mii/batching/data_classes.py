@@ -3,7 +3,7 @@
 
 # DeepSpeed Team
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Iterator, Union
+from typing import Any, Dict, List, Iterator, Optional, Union
 from typing_extensions import Self
 
 import torch
@@ -73,6 +73,7 @@ class Request:
     post_processing: List[object]
     generate_params: GenerateParamsConfig
 
+    sid: Optional[str] = None
     _next_token: Union[None, torch.Tensor] = None
     _is_done: bool = False
     _generated_tokens: List[torch.Tensor] = field(default_factory=list)
@@ -225,6 +226,10 @@ class RequestBatch:
     @property
     def uids(self) -> List[int]:
         return [r.uid for r in self.requests]
+
+    @property
+    def sids(self) -> List[str]:
+        return [r.sid for r in self.requests]
 
     @property
     def lengths(self) -> List[int]:
