@@ -115,8 +115,8 @@ class RaggedBatchBase:
         # 3. Put new tokens into inference engine
         if scheduled_requests.requests_to_run:
             next_token_logits = self.put(
-                scheduled_requests.requests_to_run.uids,
                 scheduled_requests.requests_to_run.sids,
+                scheduled_requests.requests_to_run.uids,
                 scheduled_requests.requests_to_run.tokens,
             )
 

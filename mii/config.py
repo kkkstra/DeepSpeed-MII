@@ -59,6 +59,9 @@ class GenerateParamsConfig(DeepSpeedConfigModel):
     """ Temperature value. """
 
     stop: List[str] = []
+
+    sid: Optional[str] = None
+
     """ List of strings to stop generation at."""
     @field_validator("stop", mode="before")
     @classmethod
