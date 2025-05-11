@@ -183,6 +183,7 @@ class ModelConfig(DeepSpeedConfigModel):
     """
 
     prefix_cache_strategy: Optional[PrefixCacheStrategy] = PrefixCacheStrategy.RECOMP
+    prefix_cache_strategy_alt: Optional[PrefixCacheStrategy] = PrefixCacheStrategy.RECOMP
 
     @property
     def provider(self) -> ModelProvider:
@@ -232,6 +233,10 @@ class ModelConfig(DeepSpeedConfigModel):
         self.inference_engine_config.state_manager.prefix_cache_strategy = self.prefix_cache_strategy
         return self
 
+    @model_validator(mode="after")
+    def propagate_prefix_cache_strategy_alt(self) -> "ModelConfig":
+        self.inference_engine_config.state_manager.prefix_cache_strategy_alt = self.prefix_cache_strategy_alt
+        return self
 
 class MIIConfig(DeepSpeedConfigModel):
     deployment_name: str = ""
