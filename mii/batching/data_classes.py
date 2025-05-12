@@ -3,6 +3,7 @@
 
 # DeepSpeed Team
 from dataclasses import dataclass, field, asdict
+import time
 from typing import Any, Dict, List, Iterator, Optional, Union
 from typing_extensions import Self
 
@@ -29,6 +30,11 @@ class Response:
 
     finish_reason: GenerationFinishReason
     """ Reason for ending generation. One of :class:`mii.constants.GenerationFinishReason`. """
+
+    ttft: float
+
+    tbt: float
+
     @staticmethod
     def from_msg_dict(msg: Dict[str, Union[str, int]]) -> Self:
         return Response(**msg)
@@ -72,12 +78,14 @@ class Request:
     last_in_prompt: bool
     post_processing: List[object]
     generate_params: GenerateParamsConfig
+    arrival_time: Optional[float] = None
 
     sid: Optional[str] = None
     _next_token: Union[None, torch.Tensor] = None
     _is_done: bool = False
     _generated_tokens: List[torch.Tensor] = field(default_factory=list)
     _finish_reason: GenerationFinishReason = GenerationFinishReason.NONE
+    _token_time: List[float] = field(default_factory=list)
 
     @property
     def prompt_length(self) -> int:
@@ -171,6 +179,7 @@ class Request:
         # Append the latest token to the list of generated tokens
         if not self.is_done:
             self._generated_tokens.append(self.next_token)
+            self._token_time.append(time.time())
 
     def clear_generated_token(self) -> None:
         self._generated_tokens.clear()

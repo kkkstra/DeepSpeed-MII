@@ -233,6 +233,8 @@ class RaggedBatchBase:
                 r.num_generated_tokens,
                 GenerationFinishReason.NONE,
                 r.stream,
+                r.arrival_time,
+                r._token_time,
             ))
         if r.finish_reason != GenerationFinishReason.NONE:
             if r.stream or not r.generated_tokens:
@@ -250,6 +252,8 @@ class RaggedBatchBase:
                 r.num_generated_tokens,
                 r.finish_reason,
                 r.stream,
+                r.arrival_time,
+                r._token_time,
             ))
         for output in outputs:
             self.result_queues[r.tid].put_nowait(output)
@@ -488,17 +492,30 @@ class RaggedBatchBase:
             last_in_prompt=True,
             post_processing=post_processing,
             generate_params=generate_params,
+            arrival_time=time.time(),
         )
 
     def make_response(self,
                       generated_text: str,
                       prompt_length: int,
                       generated_length: int,
-                      finish_reason: GenerationFinishReason) -> Response:
+                      finish_reason: GenerationFinishReason,
+                      arrival_time: float,
+                      token_time: List[float]) -> Response:
+        ttft = token_time[0] - arrival_time
+        if len(token_time) > 1:
+            tbt = (token_time[-1] - token_time[0]) / (len(token_time) - 1)
+        else:
+            tbt = 0
+
+        print(f"arrival_time: {arrival_time}, ttft: {ttft}, tbt: {tbt}")
+
         return Response(generated_text=generated_text,
                         prompt_length=prompt_length,
                         generated_length=generated_length,
-                        finish_reason=finish_reason)
+                        finish_reason=finish_reason,
+                        ttft=ttft,
+                        tbt=tbt)
 
     def put(self, sids: List[str], uids: List[int], tokenized_input: List[torch.Tensor]) -> torch.Tensor:
         # Call inference engine. You can skip checking schedulability because we already checked when scheduling
@@ -736,9 +753,12 @@ class MIIAsyncPipeline(RaggedBatchBase):
             return -1, Response(generated_text="",
                             prompt_length=None,
                             generated_length=None,
-                            finish_reason=None)
+                            finish_reason=None,
+                            ttft=None,
+                            tbt=None)
         tid = threading.get_ident()
-        uid, generated_token_ids, prompt_length, generated_length, finish_reason, streaming = self.result_queues[tid].get()
+        (uid, generated_token_ids, prompt_length, generated_length, finish_reason, streaming,
+            arrival_time, token_time) = self.result_queues[tid].get()
 
         if len(generated_token_ids) == 0:
             generated_text = ""
@@ -753,6 +773,8 @@ class MIIAsyncPipeline(RaggedBatchBase):
             prompt_length=prompt_length,
             generated_length=generated_length,
             finish_reason=finish_reason,
+            arrival_time=arrival_time,
+            token_time=token_time,
         )
         return uid, response
 

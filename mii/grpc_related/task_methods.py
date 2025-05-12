@@ -87,6 +87,8 @@ class TextGenerationMethods(TaskMethods):
                     generated_tokens=r.generated_length,
                     time_taken=-1,
                     model_time_taken=-1,
+                    ttft=r.ttft,
+                    tbt=r.tbt,
                 ))
 
         return modelresponse_pb2.MultiGenerationReply(response=proto_responses, )
@@ -94,12 +96,15 @@ class TextGenerationMethods(TaskMethods):
     def unpack_response_from_proto(self, response: Message) -> List[Response]:
         response_batch = []
         for r in response.response:
+            # print(f"r: {r}")
             response_batch.append(
                 Response(
                     generated_text=r.response,
                     prompt_length=r.prompt_tokens,
                     generated_length=r.generated_tokens,
                     finish_reason=r.finish_reason,
+                    ttft=r.ttft,
+                    tbt=r.tbt,
                 ))
         return response_batch
 

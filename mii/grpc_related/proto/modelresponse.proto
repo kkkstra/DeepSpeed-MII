@@ -60,6 +60,8 @@ message SingleGenerationReply {
   int64 generated_tokens = 4;
   float time_taken = 5;
   float model_time_taken = 6;
+  float ttft = 7;
+  float tbt = 8;
 }
 
 message MultiGenerationReply {
