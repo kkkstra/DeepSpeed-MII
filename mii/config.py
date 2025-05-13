@@ -61,6 +61,7 @@ class GenerateParamsConfig(DeepSpeedConfigModel):
     stop: List[str] = []
 
     sid: Optional[str] = None
+    prefix_length: Optional[int] = 0
 
     """ List of strings to stop generation at."""
     @field_validator("stop", mode="before")
@@ -184,6 +185,7 @@ class ModelConfig(DeepSpeedConfigModel):
 
     prefix_cache_strategy: Optional[PrefixCacheStrategy] = PrefixCacheStrategy.RECOMP
     prefix_cache_strategy_alt: Optional[PrefixCacheStrategy] = PrefixCacheStrategy.RECOMP
+    h_cache_layer: Optional[int] = 0
 
     @property
     def provider(self) -> ModelProvider:
@@ -236,6 +238,11 @@ class ModelConfig(DeepSpeedConfigModel):
     @model_validator(mode="after")
     def propagate_prefix_cache_strategy_alt(self) -> "ModelConfig":
         self.inference_engine_config.state_manager.prefix_cache_strategy_alt = self.prefix_cache_strategy_alt
+        return self
+    
+    @model_validator(mode="after")
+    def propagate_h_cache_layer(self) -> "ModelConfig":
+        self.inference_engine_config.state_manager.h_cache_layer = self.h_cache_layer
         return self
 
 class MIIConfig(DeepSpeedConfigModel):

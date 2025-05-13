@@ -81,6 +81,7 @@ class Request:
     arrival_time: Optional[float] = None
 
     sid: Optional[str] = None
+    prefix_length: Optional[int] = 0
     _next_token: Union[None, torch.Tensor] = None
     _is_done: bool = False
     _generated_tokens: List[torch.Tensor] = field(default_factory=list)
@@ -239,6 +240,10 @@ class RequestBatch:
     @property
     def sids(self) -> List[str]:
         return [r.sid for r in self.requests]
+
+    @property
+    def prefix_lengths(self) -> List[int]:
+        return [r.prefix_length for r in self.requests]
 
     @property
     def lengths(self) -> List[int]:

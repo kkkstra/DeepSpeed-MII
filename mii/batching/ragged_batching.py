@@ -118,6 +118,7 @@ class RaggedBatchBase:
                 scheduled_requests.requests_to_run.sids,
                 scheduled_requests.requests_to_run.uids,
                 scheduled_requests.requests_to_run.tokens,
+                scheduled_requests.requests_to_run.prefix_lengths,
             )
 
         # short circuit if not rank 0, only rank 0 does scheduling and postprocessing of logits
@@ -428,6 +429,7 @@ class RaggedBatchBase:
                      input_tokens: torch.Tensor,
                      kwargs: Dict) -> Request:
         sid = kwargs.get("sid", None)
+        prefix_length = kwargs.get("prefix_length", 0)
         kwargs["prompt_length"] = len(input_tokens)
         kwargs["max_length"] = kwargs.get("max_length", self.max_length)
         generate_params = GenerateParamsConfig(**kwargs)
@@ -493,6 +495,7 @@ class RaggedBatchBase:
             post_processing=post_processing,
             generate_params=generate_params,
             arrival_time=time.time(),
+            prefix_length=prefix_length,
         )
 
     def make_response(self,
@@ -508,8 +511,6 @@ class RaggedBatchBase:
         else:
             tbt = 0
 
-        print(f"arrival_time: {arrival_time}, ttft: {ttft}, tbt: {tbt}")
-
         return Response(generated_text=generated_text,
                         prompt_length=prompt_length,
                         generated_length=generated_length,
@@ -517,9 +518,9 @@ class RaggedBatchBase:
                         ttft=ttft,
                         tbt=tbt)
 
-    def put(self, sids: List[str], uids: List[int], tokenized_input: List[torch.Tensor]) -> torch.Tensor:
+    def put(self, sids: List[str], uids: List[int], tokenized_input: List[torch.Tensor], prefix_lengths: List[int]) -> torch.Tensor:
         # Call inference engine. You can skip checking schedulability because we already checked when scheduling
-        return self.inference_engine.put(sids, uids, tokenized_input, do_checks=False)
+        return self.inference_engine.put(sids, uids, tokenized_input, prefix_lengths, do_checks=False)
 
     def flush(self, uids: List[int]) -> None:
         for uid in uids:
